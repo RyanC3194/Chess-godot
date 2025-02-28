@@ -1,0 +1,16 @@
+[gd_scene load_steps=5 format=3 uid="uid://c27cwioy50yf0"]
+
+[ext_resource type="Script" path="res://main.gd" id="1_o1tg8"]
+[ext_resource type="PackedScene" uid="uid://b6wd4qe8663bt" path="res://piece.tscn" id="1_qnftt"]
+[ext_resource type="PackedScene" uid="uid://damci0r3a5o68" path="res://background.tscn" id="3_jhrxe"]
+[ext_resource type="PackedScene" uid="uid://b6xrd2rk5qjmo" path="res://moveIndicators.tscn" id="4_c821v"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_o1tg8")
+piece_scene = ExtResource("1_qnftt")
+
+[node name="Background" parent="." instance=ExtResource("3_jhrxe")]
+
+[node name="MoveIndicators" parent="." instance=ExtResource("4_c821v")]
+z_index = 100
+z_as_relative = false

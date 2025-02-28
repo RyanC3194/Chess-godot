@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://b6xrd2rk5qjmo"]
+
+[ext_resource type="Script" path="res://MoveIndicator.gd" id="1_7bw28"]
+
+[node name="MoveIndicators" type="ColorRect"]
+color = Color(0, 0, 0, 0)
+script = ExtResource("1_7bw28")
+
+[node name="MoveIndicator" type="ColorRect" parent="."]
+visible = false
+offset_right = 20.0
+offset_bottom = 20.0
+mouse_filter = 2
+mouse_force_pass_scroll_events = false
+color = Color(1, 0, 0, 1)
