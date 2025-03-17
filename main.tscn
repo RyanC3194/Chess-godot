@@ -16,7 +16,10 @@ piece_scene = ExtResource("1_qnftt")
 z_index = 100
 z_as_relative = false
 
+[node name="pieces" type="Node" parent="."]
+
 [node name="promotion_scene" parent="." instance=ExtResource("5_31wlr")]
+visible = false
 
 [connection signal="background_click" from="Background" to="." method="_on_background_click"]
 [connection signal="gui_input" from="Background" to="Background" method="_on_gui_input"]

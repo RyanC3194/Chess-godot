@@ -18,7 +18,7 @@ var color_index = {"White": 0, "Black": 1}
 var opposite_color_index = {"White": 1, "Black": 0}
 var blocking_squares = [[], []]
 var en_passant_ranks = [3, 4]
-var last_moved_piece # for en passant
+var en_passant_piece # for en passant
 
 # keep track of kings to calculate checks faster
 var kings = [null, null]
@@ -42,7 +42,7 @@ func _ready():
 func add_piece(type, color, col, row):
 	# if the original location has a piece, remove it first
 	if (board[col][row] != null):
-		remove_child(board[row][col])
+		$pieces.remove_child(board[row][col])
 
 	
 	# set up the board
@@ -53,7 +53,7 @@ func add_piece(type, color, col, row):
 	piece.pos = Vector2(col, row)
 	piece.color = color
 	board[col][row] = piece
-	add_child(piece)
+	$pieces.add_child(piece)
 	if type == "King":
 		kings[color_index[color]] = piece
 	piece_list[color_index[color]].append(piece)
@@ -101,15 +101,27 @@ func move_piece(piece, coord):
 			remove_from_attack_map(p)
 			removed.append(p)
 			
+	# keep track of en passant-able piece 
+	if (piece.piece_type == "Pawn" && !piece.has_moved && (coord.y - piece.pos.y == 2 || coord.y - piece.pos.y == -2)):
+		en_passant_piece = piece
+	else:
+		en_passant_piece = null
+	
 	var old_pos = piece.pos
 	var col = coord.x
 	var row = coord.y
+	
 	board[piece.pos.x][piece.pos.y] = null
 	piece.on_move(coord)
 	if (board[col][row]) != null:
 		# remove the original piece
+		remove_from_attack_map(board[col][row])
 		board[col][row].visible = false
 		piece_list[opposite_color_index[piece.color]].erase(board[col][row])
+	# remove en passant piece
+	elif (piece.piece_type == "Pawn" && coord.x != old_pos.x):
+		board[col][old_pos.y].visible = false
+		piece_list[opposite_color_index[piece.color]].erase(board[col][old_pos.y])
 		
 	board[col][row] = piece
 	white_turn = !white_turn
@@ -152,14 +164,18 @@ func move_piece(piece, coord):
 			white_turn = !white_turn
 			move_piece(board[old_pos.x - 4][old_pos.y], Vector2(old_pos.x - 1, old_pos.y))
 			
-	last_moved_piece = piece
+
 	# check if the opponent is checkmated
 	print("aa", is_checkmate((o_king.color)))
 
 
 func promotion(piece):
 	#TODO
-	piece.promote("Queen")
+	$promotion_scene.visible = true
+	$Background.enable_click = false
+	piece.promote(await $promotion_scene.get_promotion_type(piece))
+	$promotion_scene.visible = false
+	$Background.enable_click = true
 
 func add_to_attack_map(piece):
 	if piece.piece_type == "Bishop" || piece.piece_type == "Rook" || piece.piece_type == "Queen":
@@ -241,8 +257,7 @@ func get_legal_moves(piece):
 			# check en passant
 			
 			if (piece.pos.y == en_passant_ranks[color_index[piece.color]]):
-				if (last_moved_piece.piece_type == "Pawn" && board[move.x][piece.pos.y] == last_moved_piece):
-					# 
+				if (en_passant_piece != null && board[move.x][piece.pos.y] == en_passant_piece):
 					legal_moves.append(move)
 				
 		
@@ -300,6 +315,7 @@ func from_fen(fen):
 	var row = 0
 	var col = 0
 	var notation_dict = {"p": ["Pawn", "Black"], "r": ["Rook", "Black"], "n": ["Knight", "Black"], "b": ["Bishop", "Black"], "q": ["Queen", "Black"], "k": ["King", "Black"], "R": ["Rook", "White"], "N": ["Knight", "White"], "B": ["Bishop", "White"], "Q": ["Queen", "White"], "K": ["King", "White"], "P": ["Pawn", "White"]}
+	piece_list = [[], []]
 	for c in fen:
 		if c == "/":
 			row += 1

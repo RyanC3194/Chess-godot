@@ -19,6 +19,7 @@ func _ready():
 func promote(pt):
 	piece_type = pt
 	$Pawn.visible = false
+	$PawnDark.visible = false
 	_ready()
 	
 func update_type():
@@ -149,7 +150,7 @@ func update_possible_squares():
 			
 		"Pawn":
 			var offsets =[Vector2(0, 1)]
-			if (color == "Black" && pos.y == 1) || (color == "White" && pos.y == 6):
+			if ((color == "Black" && pos.y == 1) || (color == "White" && pos.y == 6) && !has_moved):
 					offsets.append(Vector2(0, 2))
 			possible_squares = [[], []]
 			for offset in offsets:

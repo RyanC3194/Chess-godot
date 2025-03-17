@@ -2,6 +2,7 @@ extends ColorRect
 
 var BOARD_WIDTH = 8
 var BOARD_HEIGHT = 8
+var enable_click = true
 
 signal background_click
 
@@ -27,6 +28,6 @@ func convert_coord(coord):
 
 
 func _on_gui_input(event):
-	if event is InputEventMouseButton:
+	if event is InputEventMouseButton && enable_click:
 		background_click.emit(convert_coord((event.position)))
 	pass # Replace with function body.
