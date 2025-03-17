@@ -1,7 +1,7 @@
 extends ColorRect
 
-var BOARD_WIDTH = 6
-var BOARD_HEIGHT = 6
+var BOARD_WIDTH = 8
+var BOARD_HEIGHT = 8
 var move_indicators = []
 var active_indicator = []
 

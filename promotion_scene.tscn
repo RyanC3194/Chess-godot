@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://bj1g4lvexbdh1"]
+
+[ext_resource type="Script" path="res://promotion_scene.gd" id="1_rc0i5"]
+
+[node name="promotion_scene" type="ColorRect"]
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_rc0i5")
