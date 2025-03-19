@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://c27cwioy50yf0"]
+[gd_scene load_steps=7 format=3 uid="uid://c27cwioy50yf0"]
 
 [ext_resource type="Script" path="res://main.gd" id="1_o1tg8"]
 [ext_resource type="PackedScene" uid="uid://b6wd4qe8663bt" path="res://piece.tscn" id="1_qnftt"]
 [ext_resource type="PackedScene" uid="uid://damci0r3a5o68" path="res://background.tscn" id="3_jhrxe"]
 [ext_resource type="PackedScene" uid="uid://b6xrd2rk5qjmo" path="res://moveIndicators.tscn" id="4_c821v"]
 [ext_resource type="PackedScene" uid="uid://bj1g4lvexbdh1" path="res://promotion_scene.tscn" id="5_31wlr"]
+[ext_resource type="PackedScene" uid="uid://dwulpjl06wv0i" path="res://hud.tscn" id="6_bugeq"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_o1tg8")
@@ -19,6 +20,9 @@ z_as_relative = false
 [node name="pieces" type="Node" parent="."]
 
 [node name="promotion_scene" parent="." instance=ExtResource("5_31wlr")]
+visible = false
+
+[node name="HUD" parent="." instance=ExtResource("6_bugeq")]
 visible = false
 
 [connection signal="background_click" from="Background" to="." method="_on_background_click"]

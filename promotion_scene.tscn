@@ -17,6 +17,7 @@ script = ExtResource("1_rc0i5")
 
 [node name="Queen" type="TextureRect" parent="."]
 visible = false
+layout_mode = 0
 offset_right = 45.0
 offset_bottom = 45.0
 scale = Vector2(2.222, 2.222)
@@ -24,6 +25,7 @@ texture = ExtResource("2_qvrfp")
 
 [node name="Rook" type="TextureRect" parent="."]
 visible = false
+layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 scale = Vector2(2.222, 2.222)
@@ -31,6 +33,7 @@ texture = ExtResource("3_tlok8")
 
 [node name="Bishop" type="TextureRect" parent="."]
 visible = false
+layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 scale = Vector2(2.222, 2.222)
@@ -38,6 +41,7 @@ texture = ExtResource("4_71tt5")
 
 [node name="Knight" type="TextureRect" parent="."]
 visible = false
+layout_mode = 0
 offset_right = 45.0
 offset_bottom = 45.0
 scale = Vector2(2.222, 2.222)
@@ -45,6 +49,7 @@ texture = ExtResource("5_pl1xf")
 
 [node name="RookDark" type="TextureRect" parent="."]
 visible = false
+layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 scale = Vector2(2.222, 2.222)
@@ -52,6 +57,7 @@ texture = ExtResource("6_b4m86")
 
 [node name="BishopDark" type="TextureRect" parent="."]
 visible = false
+layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 scale = Vector2(2.222, 2.222)
@@ -59,6 +65,7 @@ texture = ExtResource("7_314c5")
 
 [node name="KnightDark" type="TextureRect" parent="."]
 visible = false
+layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 scale = Vector2(2.222, 2.222)
@@ -66,6 +73,7 @@ texture = ExtResource("8_bn1rp")
 
 [node name="QueenDark" type="TextureRect" parent="."]
 visible = false
+layout_mode = 0
 offset_right = 45.0
 offset_bottom = 45.0
 scale = Vector2(2.222, 2.222)

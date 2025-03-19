@@ -3,15 +3,28 @@ extends Area2D
 var BOARD_WIDTH = 8
 var BOARD_HEIGHT = 8
 
+
 @export_enum("King", "Rook", "Knight", "Bishop", "Pawn", "Queen") var piece_type: String
 @export_enum("Black", "White") var color: String
-var has_moved = false
-var clickable = false
-var selected = true
+var move_count = 0 # has this piece moved before
 var possible_squares = []
 var pos: Vector2
+var active = true # currently on the board
+
+# offset tables for piece movements
 static var king_offsets = [Vector2(1, 1), Vector2(1, 0), Vector2(1, -1), Vector2(0, 1), Vector2(0, -1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1)]
 static var knight_offsets = [Vector2(2, 1), Vector2(2, -1), Vector2(-2, 1), Vector2(-2, -1), Vector2(1, 2), Vector2(1, -2), Vector2(-1, 2), Vector2(-1, -2),]
+
+
+func init(_type, _pos, _color):
+	piece_type = _type
+	pos = _pos
+	color = _color
+	position.x = pos.x * 100 #TODO dont use magic number
+	position.y = pos.y * 100
+	_ready()
+	
+
 func _ready():
 	update_type()
 	update_possible_squares()
@@ -24,31 +37,33 @@ func promote(pt):
 	
 func update_type():
 	if (color == "White"):
-		if (piece_type == "King"):
-			$King.visible = true
-		elif (piece_type == "Knight"):
-			$Knight.visible = true
-		elif (piece_type == "Bishop"):
-			$Bishop.visible = true
-		elif (piece_type == "Pawn"):
-			$Pawn.visible = true
-		elif (piece_type == "Rook"):
-			$Rook.visible = true
-		elif (piece_type == "Queen"):
-			$Queen.visible = true
+		match piece_type:
+			"King":
+				$King.visible = true
+			"Knight":
+				$Knight.visible = true
+			"Bishop":
+				$Bishop.visible = true
+			"Pawn":
+				$Pawn.visible = true
+			"Rook":
+				$Rook.visible = true
+			"Queen":
+				$Queen.visible = true
 	else:
-		if (piece_type == "King"):
-			$KingDark.visible = true
-		elif (piece_type == "Knight"):
-			$KnightDark.visible = true
-		elif (piece_type == "Bishop"):
-			$BishopDark.visible = true
-		elif (piece_type == "Pawn"):
-			$PawnDark.visible = true
-		elif (piece_type == "Rook"):
-			$RookDark.visible = true
-		elif (piece_type == "Queen"):
-			$QueenDark.visible = true
+		match piece_type:
+			"King":
+				$KingDark.visible = true
+			"Knight":
+				$KnightDark.visible = true
+			"Bishop":
+				$BishopDark.visible = true
+			"Pawn":
+				$PawnDark.visible = true
+			"Rook":
+				$RookDark.visible = true
+			"Queen":
+				$QueenDark.visible = true
 
 func calculate_bishop_possible_squares():
 	var result = []
@@ -150,7 +165,7 @@ func update_possible_squares():
 			
 		"Pawn":
 			var offsets =[Vector2(0, 1)]
-			if ((color == "Black" && pos.y == 1) || (color == "White" && pos.y == 6) && !has_moved):
+			if ((color == "Black" && pos.y == 1) || (color == "White" && pos.y == 6) && move_count == 0):
 					offsets.append(Vector2(0, 2))
 			possible_squares = [[], []]
 			for offset in offsets:
@@ -174,9 +189,10 @@ func update_possible_squares():
 				
 	
 func on_move(coord):
-	has_moved = true
+	move_count += 1
 	var col = coord.x
 	var row = coord.y
+	# TODO set the position using screen size instead of fixed values
 	position.x = col * 100
 	position.y = row * 100
 	pos =  Vector2(col, row)
@@ -184,6 +200,9 @@ func on_move(coord):
 	
 func _process(delta):
 	pass
+	
+func _to_string():
+	return "(" + color + " " + piece_type + " " + str(pos) + ")"
 	
 		
 

@@ -8,14 +8,22 @@ var BOARD_HEIGHT = 8
 var board = []
 # the piece the is selected by clicking on it
 var selected_piece
-# white's turn to move
+# if its white's turn to move
 var white_turn = true
-var attack_map = [] # 2d array, represent which piecce is attacking that square. First dictionary is for white attack map, second dictionary for black attack map
+
+# 2d array, represent which piecce is attacking that square. First dictionary is for white attack map, second dictionary for black attack map
+# Since godot has no Set, use Map to imitate Set's behavior
 # set.add(value) <-> dict[value] = null
 # set.remove(value) <-> dict.erase(value)
 # set.has(value) <-> dict.has(value) or value in dict
+var attack_map = []
+
+# for variable "kings", "attack_map", "blocking_squares", "en_passant_ranks", white's and black's value are store in a size 2 list.
+# e.g. [white's value, black's value]
+# this 2 Dictionary convert string representation  
 var color_index = {"White": 0, "Black": 1}
 var opposite_color_index = {"White": 1, "Black": 0}
+
 var blocking_squares = [[], []]
 var en_passant_ranks = [3, 4]
 var en_passant_piece # for en passant
@@ -26,32 +34,25 @@ var kings = [null, null]
 # keep track of all the pieces
 var piece_list = [[], []]
 
+# keep track of all the moves
+var move_list = [] # format: [[piece, piece type, new type, original pos, new pos, piece taken]
+
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	clear_board()
 	from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
-	reveal_attack_map()
-	for column in board:
-		for p in column:
-			if (p != null):
-				add_to_attack_map(p)
 	
-	
-# THis function makes the attack map not accurate.
+
+# This function makes the attack map not accurate.
 func add_piece(type, color, col, row):
 	# if the original location has a piece, remove it first
 	if (board[col][row] != null):
 		$pieces.remove_child(board[row][col])
-
 	
 	# set up the board
 	var piece = piece_scene.instantiate()
-	piece.piece_type = type
-	piece.position.x = col * 100 #TODO dont use magic number
-	piece.position.y = row * 100
-	piece.pos = Vector2(col, row)
-	piece.color = color
+	piece.init(type, Vector2(col, row), color)
 	board[col][row] = piece
 	$pieces.add_child(piece)
 	if type == "King":
@@ -102,7 +103,7 @@ func move_piece(piece, coord):
 			removed.append(p)
 			
 	# keep track of en passant-able piece 
-	if (piece.piece_type == "Pawn" && !piece.has_moved && (coord.y - piece.pos.y == 2 || coord.y - piece.pos.y == -2)):
+	if (piece.piece_type == "Pawn" && piece.move_count == 0 && (coord.y - piece.pos.y == 2 || coord.y - piece.pos.y == -2)):
 		en_passant_piece = piece
 	else:
 		en_passant_piece = null
@@ -111,17 +112,20 @@ func move_piece(piece, coord):
 	var col = coord.x
 	var row = coord.y
 	
+	var new_move = [piece, piece.piece_type, piece.piece_type, piece.pos, coord, board[col][row]]
+	
 	board[piece.pos.x][piece.pos.y] = null
 	piece.on_move(coord)
 	if (board[col][row]) != null:
 		# remove the original piece
 		remove_from_attack_map(board[col][row])
 		board[col][row].visible = false
-		piece_list[opposite_color_index[piece.color]].erase(board[col][row])
+		board[col][row].active = false
 	# remove en passant piece
 	elif (piece.piece_type == "Pawn" && coord.x != old_pos.x):
+		new_move[-1] = board[col][old_pos.y]
 		board[col][old_pos.y].visible = false
-		piece_list[opposite_color_index[piece.color]].erase(board[col][old_pos.y])
+		board[col][old_pos.y].active = false
 		
 	board[col][row] = piece
 	white_turn = !white_turn
@@ -129,6 +133,10 @@ func move_piece(piece, coord):
 	# check promotion
 	if (piece.piece_type == "Pawn" && (row == 0 && piece.color == "White" || row == BOARD_HEIGHT - 1 && piece.color == "Black")):
 		promotion(piece)
+		# update the new piece type to the move list
+		new_move[2] = piece.piece_type
+	
+	move_list.append(new_move)
 
 	for i in range(2):
 		for p in attack_map[old_pos.x][old_pos.y][i].keys():
@@ -145,6 +153,7 @@ func move_piece(piece, coord):
 				var mag = max(o_king.pos.x - piece.pos.x, o_king.pos.y - piece.pos.y, piece.pos.x - o_king.pos.x, piece.pos.y - o_king.pos.y)
 				var offset = (o_king.pos - piece.pos) / mag
 				var current = piece.pos
+				blocking_squares[color_index[piece.color]] = []
 				while (current != o_king.pos):
 					blocking_squares[color_index[piece.color]].append(current)
 					current += offset
@@ -165,12 +174,12 @@ func move_piece(piece, coord):
 			move_piece(board[old_pos.x - 4][old_pos.y], Vector2(old_pos.x - 1, old_pos.y))
 			
 
-	# check if the opponent is checkmated
-	print("aa", is_checkmate((o_king.color)))
+	if (is_checkmate(o_king.color)):
+		$HUD.on_win(piece.color)
+	print(move_list)
 
 
 func promotion(piece):
-	#TODO
 	$promotion_scene.visible = true
 	$Background.enable_click = false
 	piece.promote(await $promotion_scene.get_promotion_type(piece))
@@ -208,7 +217,8 @@ func remove_from_attack_map(piece):
 			if board[move.x][move.y] == null:
 				attack_map[move.x][move.y][color_index[piece.color]].erase(piece)
 
-# for pieces other than kings
+#determine if the resulting move would keep/make the player in check, making it an illegal move
+# TODO special case en passant
 func is_check_resolved(piece, move):
 	if piece.piece_type != "King":
 		if is_in_check()[color_index[piece.color]] == 2:
@@ -230,8 +240,10 @@ func is_check_resolved(piece, move):
 		
 	
 func get_legal_moves(piece):
+	# if the king is doubled check, other pieces will not be able to resolve the check
 	if piece.piece_type != "King" && is_in_check()[color_index[piece.color]] > 1:
 			return []
+			
 	var legal_moves = []
 	if piece.piece_type == "Bishop" || piece.piece_type == "Rook" || piece.piece_type == "Queen":
 		for diag in piece.possible_squares:
@@ -267,18 +279,18 @@ func get_legal_moves(piece):
 					if is_check_resolved(piece, move):
 						legal_moves.append(move)
 		# castle
-		if (piece.piece_type == "King" && !piece.has_moved && is_in_check()[color_index[piece.color]] == 0):
+		if (piece.piece_type == "King" && piece.move_count == 0 && is_in_check()[color_index[piece.color]] == 0):
 			#TODO maybe refractor to a funciion
 			#king side
 			if (board[piece.pos.x + 1][piece.pos.y] == null && attack_map[piece.pos.x + 1][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
 				if (board[piece.pos.x + 2][piece.pos.y] == null && attack_map[piece.pos.x + 2][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
-					if (board[piece.pos.x + 3][piece.pos.y] != null && !board[piece.pos.x + 3][piece.pos.y].has_moved && attack_map[piece.pos.x + 3][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
+					if (board[piece.pos.x + 3][piece.pos.y] != null && board[piece.pos.x + 3][piece.pos.y].move_count == 0 && attack_map[piece.pos.x + 3][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
 						legal_moves.append(Vector2(piece.pos.x + 2 , piece.pos.y))
 			# queenside
 			if (board[piece.pos.x - 1][piece.pos.y] == null && attack_map[piece.pos.x - 1][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
 				if (board[piece.pos.x - 2][piece.pos.y] == null && attack_map[piece.pos.x - 2][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
 					if (board[piece.pos.x - 3][piece.pos.y] == null && attack_map[piece.pos.x - 3][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
-						if (board[piece.pos.x - 4][piece.pos.y] != null && !board[piece.pos.x - 4][piece.pos.y].has_moved && attack_map[piece.pos.x - 3][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
+						if (board[piece.pos.x - 4][piece.pos.y] != null && board[piece.pos.x - 4][piece.pos.y].move_count == 0 && attack_map[piece.pos.x - 3][piece.pos.y][opposite_color_index[piece.color]].size() == 0):
 							legal_moves.append(Vector2(piece.pos.x - 2 , piece.pos.y))
 	return legal_moves
 
@@ -287,6 +299,7 @@ func _on_piece_selected(node):
 		$MoveIndicators.move_indicators[possible_square.x][possible_square.y].visible = true
 	$MoveIndicators.active_indicator = get_legal_moves(node)
 
+# determine which piece is selected when clicked
 func _on_background_click(coord):
 	$MoveIndicators.clear_indicators()
 	if selected_piece != null:
@@ -303,6 +316,7 @@ func _on_background_click(coord):
 		else:
 			selected_piece = null
 
+# clear the entire board and attack map
 func clear_board():
 	for height in BOARD_HEIGHT:
 		attack_map.append([])
@@ -311,6 +325,7 @@ func clear_board():
 			board[height].append(null)
 			attack_map[height].append([{}, {}]) # use dictionary as set
 
+# laod the game to a certain position from fen code
 func from_fen(fen):
 	var row = 0
 	var col = 0
@@ -325,7 +340,13 @@ func from_fen(fen):
 			col += 1
 		else:
 			col += int(c)
+			
+	for column in board:
+		for p in column:
+			if (p != null):
+				add_to_attack_map(p)
 
+# for debug
 func reveal_attack_map():
 	for x in attack_map.size():
 		for y in attack_map[x].size():
@@ -333,13 +354,15 @@ func reveal_attack_map():
 				$MoveIndicators.move_indicators[x][y].visible = true
 				$MoveIndicators.active_indicator.append(Vector2(x, y))
 
+# determine if a player has no avaliable moves
 func is_checkmate(color):
 	match is_in_check()[color_index[color]]:
 		2:
 			return get_legal_moves(kings[color_index[color]]).size() == 0
 		1:
+			# if the king is checked only one way, other pieces may be able to block or capture the checknig piece
 			for p in piece_list[color_index[color]]:
-				if get_legal_moves(p).size() > 0:
+				if p.active && get_legal_moves(p).size() > 0:
 					return false;
 			return get_legal_moves(kings[color_index[color]]).size() == 0
 		0:
