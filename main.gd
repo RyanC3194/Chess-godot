@@ -35,13 +35,71 @@ var kings = [null, null]
 var piece_list = [[], []]
 
 # keep track of all the moves
-var move_list = [] # format: [[piece, piece type, new type, original pos, new pos, piece taken]
+var move_list = [] # format: [[piece, piece type, new type, original pos, new pos, piece taken, en_passant_piece]
 
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	clear_board()
 	from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
+	
+
+# return the list of pieces removed from attack map from the given coord
+func remove_square_from_attack_map(coord):
+	var removed = []
+	for i in range(2):
+		for p in attack_map[coord.x][coord.y][i].keys():
+			remove_from_attack_map(p)
+			removed.append(p)
+	return removed
+
+# 
+func un_move():
+	var last_move = move_list.pop_back() # [[piece, piece type, new type, original pos, new pos, piece taken]
+	if (last_move == null):
+		return 
+		
+	var piece = last_move[0]
+	var pt = last_move[1]
+	var coord = last_move[3]
+	var old_pos = last_move[4]
+	var piece_taken = last_move[5]
+	en_passant_piece = last_move[6]
+	
+	var removed = []
+	
+	remove_from_attack_map(piece)
+	
+	for i in range(2):
+		removed.append_array(remove_square_from_attack_map(coord))
+		removed.append_array(remove_square_from_attack_map(old_pos))
+			
+		# en passant piece
+		if piece_taken != null:
+			removed.append_array(remove_square_from_attack_map(piece_taken.pos))
+			
+	board[coord.x][coord.y] = piece
+	board[old_pos.x][old_pos.y] = null
+	piece.on_unmove(coord, pt)
+	
+	for p in removed:
+		add_to_attack_map(p)
+	
+	if piece_taken != null:
+		piece_taken.active = true
+		piece_taken.visible = true
+		board[piece_taken.pos.x][piece_taken.pos.y] = piece_taken
+
+	# TODO castle
+	
+	for p in removed:
+		add_to_attack_map(p)
+	add_to_attack_map(piece)
+	add_to_attack_map(piece_taken)
+		
+	white_turn = !white_turn
+		
+		
 	
 
 # This function makes the attack map not accurate.
@@ -95,12 +153,19 @@ func is_in_check():
 	return [attack_map[kings[0].pos.x][kings[0].pos.y][1].size(), attack_map[kings[1].pos.x][kings[1].pos.y][0].size()]
 
 func move_piece(piece, coord):
-	remove_from_attack_map(piece)
+	var old_pos = piece.pos
+	var col = coord.x
+	var row = coord.y
 	var removed = []
+	var new_move = [piece, piece.piece_type, piece.piece_type, piece.pos, coord, board[col][row], en_passant_piece]
+	
+	remove_from_attack_map(piece)
+	
 	for i in range(2):
 		for p in attack_map[coord.x][coord.y][i].keys():
 			remove_from_attack_map(p)
 			removed.append(p)
+	
 			
 	# keep track of en passant-able piece 
 	if (piece.piece_type == "Pawn" && piece.move_count == 0 && (coord.y - piece.pos.y == 2 || coord.y - piece.pos.y == -2)):
@@ -108,11 +173,6 @@ func move_piece(piece, coord):
 	else:
 		en_passant_piece = null
 	
-	var old_pos = piece.pos
-	var col = coord.x
-	var row = coord.y
-	
-	var new_move = [piece, piece.piece_type, piece.piece_type, piece.pos, coord, board[col][row]]
 	
 	board[piece.pos.x][piece.pos.y] = null
 	piece.on_move(coord)
@@ -126,6 +186,7 @@ func move_piece(piece, coord):
 		new_move[-1] = board[col][old_pos.y]
 		board[col][old_pos.y].visible = false
 		board[col][old_pos.y].active = false
+		new_move[5] = board[col][old_pos.y]
 		
 	board[col][row] = piece
 	white_turn = !white_turn
@@ -187,6 +248,8 @@ func promotion(piece):
 	$Background.enable_click = true
 
 func add_to_attack_map(piece):
+	if piece == null:
+		return
 	if piece.piece_type == "Bishop" || piece.piece_type == "Rook" || piece.piece_type == "Queen":
 		for diag in piece.possible_squares:
 			for move in diag:
@@ -298,6 +361,7 @@ func _on_piece_selected(node):
 	for possible_square in get_legal_moves(node):
 		$MoveIndicators.move_indicators[possible_square.x][possible_square.y].visible = true
 	$MoveIndicators.active_indicator = get_legal_moves(node)
+	print(node.possible_squares)
 
 # determine which piece is selected when clicked
 func _on_background_click(coord):
@@ -372,3 +436,5 @@ func is_checkmate(color):
 func _process(delta):
 	if Input.is_action_pressed("reveal_attack_map"):
 		reveal_attack_map()
+	elif Input.is_action_just_released("unmove"):
+		un_move()

@@ -34,7 +34,7 @@ func promote(pt):
 	$Pawn.visible = false
 	$PawnDark.visible = false
 	_ready()
-	
+		
 func update_type():
 	if (color == "White"):
 		match piece_type:
@@ -165,6 +165,7 @@ func update_possible_squares():
 			
 		"Pawn":
 			var offsets =[Vector2(0, 1)]
+			# check first move
 			if ((color == "Black" && pos.y == 1) || (color == "White" && pos.y == 6) && move_count == 0):
 					offsets.append(Vector2(0, 2))
 			possible_squares = [[], []]
@@ -176,6 +177,8 @@ func update_possible_squares():
 					new_pos = pos + (-1) * offset
 				if new_pos.x >= 0 &&  new_pos.x < BOARD_WIDTH && new_pos.y >= 0 &&  new_pos.y < BOARD_HEIGHT:
 					possible_squares[0].append(new_pos)
+					
+			# attacks
 			offsets = [Vector2(1, 1), Vector2(-1, 1)]
 			for offset in offsets:
 				var new_pos: Vector2
@@ -190,13 +193,21 @@ func update_possible_squares():
 	
 func on_move(coord):
 	move_count += 1
+	print(move_count)
 	var col = coord.x
 	var row = coord.y
 	# TODO set the position using screen size instead of fixed values
 	position.x = col * 100
 	position.y = row * 100
-	pos =  Vector2(col, row)
+	pos =  coord
 	update_possible_squares()
+	print(possible_squares)
+	
+func on_unmove(coord, pt):
+	move_count -= 2 # -2 to account for move_count +1 in on_move()
+	piece_type = pt
+	update_type()
+	on_move(coord)
 	
 func _process(delta):
 	pass
